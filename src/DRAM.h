@@ -248,7 +248,7 @@ template <typename T>
 typename T::Command DRAM<T>::decode(typename T::Command cmd, const int* addr)
 {
     int child_id = addr[int(level)+1];
-    if (prereq[int(cmd)]) {
+    if (prereq[int(cmd)]){
         typename T::Command prereq_cmd = prereq[int(cmd)](this, cmd, child_id);
         if (prereq_cmd != T::Command::MAX)
             return prereq_cmd; // stop recursion: there is a prerequisite at this level

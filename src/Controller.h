@@ -35,6 +35,8 @@ protected:
     ScalarStat read_transaction_bytes;
     ScalarStat write_transaction_bytes;
 
+    // added cnt. read/write switch
+    ScalarStat RWswitch;
     ScalarStat row_hits;
     ScalarStat row_misses;
     ScalarStat row_conflicts;
@@ -125,7 +127,11 @@ public:
         }
 
         // regStats
-
+        RWswitch
+            .name("RWswitch_channel_"+to_string(channel->id)+"_core")
+            .desc("the number of switch between Read and Write")
+            .precision(0)
+            ;
         row_hits
             .name("row_hits_channel_"+to_string(channel->id) + "_core")
             .desc("Number of row hits per channel per core")
@@ -356,13 +362,20 @@ public:
         /*** 3. Should we schedule writes? ***/
         if (!write_mode) {
             // yes -- write queue is almost full or read queue is empty
-            if (writeq.size() > int(wr_high_watermark * writeq.max) || readq.size() == 0)
-                write_mode = true;
+            if (writeq.size() > int(wr_high_watermark * writeq.max) || readq.size() == 0){
+                 write_mode = true;
+                 RWswitch++;
+            }
+               
         }
         else {
             // no -- write queue is almost empty and read queue is not empty
-            if (writeq.size() < int(wr_low_watermark * writeq.max) && readq.size() != 0)
+            if (writeq.size() < int(wr_low_watermark * writeq.max) && readq.size() != 0){
+                if(write_mode==true)
+                    RWswitch++;
                 write_mode = false;
+            }
+                
         }
 
         /*** 4. Find the best command to schedule, if any ***/
